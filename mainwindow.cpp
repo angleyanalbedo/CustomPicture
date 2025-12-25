@@ -55,6 +55,7 @@ void MainWindow::initUI()
 
 void MainWindow::initCamera()
 {
+#if NOT_RK3568
     // 检查可用摄像头
     QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
     if (cameras.isEmpty()) {
@@ -65,6 +66,10 @@ void MainWindow::initCamera()
 
     // 使用第一个摄像头
     camera = new QCamera(cameras.first(), this);
+#else
+    camera = new QCamera(chooseCamera(),this);
+#endif
+
     viewfinder = new QCameraViewfinder(this);
     imageCapture = new QCameraImageCapture(camera, this);
 
@@ -72,6 +77,28 @@ void MainWindow::initCamera()
 
     // 添加到布局
     ui->cameraContainerLayout->addWidget(viewfinder);
+}
+
+QCameraInfo MainWindow::chooseCamera(){
+    const auto all = QCameraInfo::availableCameras();
+
+    /* 1. 优先：描述里带 "USB" / "UVC" / "Web" 的摄像头 */
+    for (const QCameraInfo &i : all) {
+        const QString desc = i.description().toLower();
+        if (desc.contains("usb") || desc.contains("uvc") || desc.contains("web"))
+            return i;
+    }
+
+    /* 2. 其次：设备名里带 video9 / video8 ... 等 USB 口 */
+    for (const QCameraInfo &i : all) {
+        if (i.deviceName().contains("video9") ||
+            i.deviceName().contains("video8") ||
+            i.deviceName().contains("video7"))
+            return i;
+    }
+
+    /* 3. 最后：随便一个能用的 */
+    return all.isEmpty() ? QCameraInfo() : all.first();
 }
 
 void MainWindow::initTemplates()

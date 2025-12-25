@@ -129,6 +129,7 @@ private:
     // 工具方法
     QPixmap createPosterPreview();
     QString getSaveFileName(const QString &title, const QString &filter);
+    QCameraInfo chooseCamera();
 
 
 };
