@@ -99,10 +99,10 @@ void MainWindow::initTemplates()
 void MainWindow::initConnections()
 {
     // 文件菜单
-    // connect(ui->actionNew, &QAction::triggered, this, &MainWindow::onActionNew);
-    // connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onActionOpen);
-    // connect(ui->actionSave, &QAction::triggered, this, &MainWindow::onActionSave);
-    // connect(ui->actionExport, &QAction::triggered, this, &MainWindow::onActionExport);
+    connect(ui->actionNew, &QAction::triggered, this, &MainWindow::onActionNew);
+    connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onActionOpen);
+    connect(ui->actionSave, &QAction::triggered, this, &MainWindow::onActionSave);
+    connect(ui->actionExport, &QAction::triggered, this, &MainWindow::onActionExport);
     connect(ui->actionExit, &QAction::triggered, this, &QMainWindow::close);
 
     // 编辑菜单
@@ -600,7 +600,292 @@ void MainWindow::closeEvent(QCloseEvent *event)
     event->accept();
 }
 
-// ... 其他方法，如 onActionNew, onActionOpen, onActionExport 等
+void MainWindow::onActionNew()
+{
+    // 创建新的海报项目
+    if (!photoItems.isEmpty()) {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this, "新建海报", "当前海报将丢失，是否继续？",
+            QMessageBox::Yes | QMessageBox::No);
+
+        if (reply == QMessageBox::No) {
+            return;
+        }
+    }
+
+    clearAllPhotos();
+    scene->clear();
+    photoItems.clear();
+    selectedItem = nullptr;
+
+    // 重置模板选择
+    if (ui->templateList->count() > 0) {
+        ui->templateList->setCurrentRow(0);
+    }
+
+    currentTemplate.clear();
+
+    // 更新状态
+    updateToolButtons();
+    ui->statusBar->showMessage("已创建新的海报", 2000);
+}
+
+void MainWindow::onActionOpen()
+{
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                                    tr("打开海报项目"), "",
+                                                    tr("海报项目 (*.poster);;所有文件 (*)"));
+
+    if (!fileName.isEmpty()) {
+        // 这里可以添加加载项目的逻辑
+        // 暂时先清空当前内容
+        onActionNew();
+
+        QMessageBox::information(this, "提示",
+                                 "项目文件加载功能待实现\n文件: " + fileName);
+    }
+}
+
+void MainWindow::onActionSave()
+{
+    if (photoItems.isEmpty()) {
+        QMessageBox::warning(this, "保存失败", "当前没有图片可以保存");
+        return;
+    }
+
+    QString defaultName = QString("海报_%1").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+    QString fileName = QFileDialog::getSaveFileName(this,
+                                                    tr("保存海报"), defaultName,
+                                                    tr("PNG图片 (*.png);;JPEG图片 (*.jpg *.jpeg);;BMP图片 (*.bmp)"));
+
+    if (!fileName.isEmpty()) {
+        // 获取文件格式
+        QString format = "PNG";
+        if (fileName.endsWith(".jpg", Qt::CaseInsensitive) ||
+            fileName.endsWith(".jpeg", Qt::CaseInsensitive)) {
+            format = "JPG";
+        } else if (fileName.endsWith(".bmp", Qt::CaseInsensitive)) {
+            format = "BMP";
+        }
+
+        savePosterImage(fileName, format);
+        ui->statusBar->showMessage(QString("海报已保存: %1").arg(fileName), 3000);
+    }
+}
+
+void MainWindow::onActionExport()
+{
+    if (photoItems.isEmpty()) {
+        QMessageBox::warning(this, "导出失败", "当前没有图片可以导出");
+        return;
+    }
+
+    QString defaultName = QString("高清海报_%1").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+    QString fileName = QFileDialog::getSaveFileName(this,
+                                                    tr("导出高清海报"), defaultName,
+                                                    tr("PNG图片 (*.png);;JPEG图片 (*.jpg *.jpeg);;PDF文档 (*.pdf)"));
+
+    if (!fileName.isEmpty()) {
+        // 获取文件格式
+        QString format = "PNG";
+        if (fileName.endsWith(".jpg", Qt::CaseInsensitive) ||
+            fileName.endsWith(".jpeg", Qt::CaseInsensitive)) {
+            format = "JPG";
+        } else if (fileName.endsWith(".pdf", Qt::CaseInsensitive)) {
+            format = "PDF";
+        }
+
+        // 如果是PDF，使用特定方法
+        if (format == "PDF") {
+            exportToPdf(fileName);
+        } else {
+            exportHighQuality(fileName, format);
+        }
+
+        ui->statusBar->showMessage(QString("高清海报已导出: %1").arg(fileName), 3000);
+    }
+}
+
+// 更新状态栏
+void MainWindow::updateStatusBar()
+{
+    QString status;
+
+    if (selectedItem) {
+        QPointF pos = selectedItem->pos();
+        status = QString("选中项目 | 位置: (%1, %2) | 缩放: %3%")
+                     .arg(pos.x(), 0, 'f', 1)
+                     .arg(pos.y(), 0, 'f', 1)
+                     .arg(zoomFactor * 100, 0, 'f', 1);
+    } else {
+        status = QString("就绪 | 图片数量: %1 | 缩放: %2%")
+                     .arg(photoItems.size())
+                     .arg(zoomFactor * 100, 0, 'f', 1);
+    }
+
+    ui->statusBar->showMessage(status);
+}
+
+
+
+// 实现 exportHighQuality 方法
+void MainWindow::exportHighQuality(const QString &fileName, const QString &format)
+{
+    // 高清导出 - 使用更大的分辨率
+    QRectF totalRect = scene->itemsBoundingRect();
+    QSize originalSize = totalRect.size().toSize();
+
+    // 高清尺寸（2倍）
+    QSize hdSize = originalSize * 2;
+    QImage image(hdSize, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+
+    // 缩放渲染
+    painter.scale(2.0, 2.0);
+    scene->render(&painter);
+    painter.end();
+
+    // 保存图像
+    if (!image.save(fileName, format.toLatin1(), 100)) { // 100%质量
+        QMessageBox::critical(this, "导出失败", "无法导出高清图像");
+    }
+}
+
+// 实现 exportToPdf 方法
+void MainWindow::exportToPdf(const QString &fileName)
+{
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(fileName);
+    printer.setPageSize(QPageSize(QPageSize::A4));
+    printer.setPageOrientation(QPageLayout::Portrait);
+    printer.setFullPage(true);
+
+    QPainter painter(&printer);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // 计算缩放比例以适应页面
+    QRectF sceneRect = scene->itemsBoundingRect();
+    qreal xscale = printer.pageRect().width() / sceneRect.width();
+    qreal yscale = printer.pageRect().height() / sceneRect.height();
+    qreal scale = qMin(xscale, yscale);
+
+    painter.scale(scale, scale);
+    scene->render(&painter);
+    painter.end();
+}
+
+
+// 实现 cropSelectedPhoto 方法
+void MainWindow::cropSelectedPhoto()
+{
+    if (!selectedItem) {
+        QMessageBox::warning(this, "裁剪失败", "请先选择一张图片");
+        return;
+    }
+     QRectF itemRect = selectedItem->boundingRect();
+    bool ok = false;
+    int x = QInputDialog::getInt(this, "裁剪图片", "X:", 0, 0,
+                                 int(itemRect.width()),  1, &ok);
+    if (!ok) return;
+    int y = QInputDialog::getInt(this, "裁剪图片", "Y:", 0, 0,
+                                 int(itemRect.height()), 1, &ok);
+    if (!ok) return;
+    int w = QInputDialog::getInt(this, "裁剪图片", "宽度:", int(itemRect.width()),
+                                 1, int(itemRect.width()), 1, &ok);
+    if (!ok) return;
+    int h = QInputDialog::getInt(this, "裁剪图片", "高度:", int(itemRect.height()),
+                                 1, int(itemRect.height()), 1, &ok);
+    if (!ok) return;
+
+    QRect cropRect(x, y, w, h);
+    if (!cropRect.isValid()) return;
+
+    if (ok && cropRect.isValid()) {
+        QPixmap original = selectedItem->pixmap();
+        QPixmap cropped = ImageEditor::cropImage(original, cropRect);
+        selectedItem->setPixmap(cropped);
+        ui->statusBar->showMessage("图片已裁剪", 2000);
+    }
+}
+
+// 实现 rotateSelectedPhoto 方法
+void MainWindow::rotateSelectedPhoto(qreal angle)
+{
+    if (!selectedItem) return;
+
+    QPixmap original = selectedItem->pixmap();
+    QPixmap rotated = ImageEditor::rotateImage(original, angle);
+    selectedItem->setPixmap(rotated);
+}
+
+// 实现 applyFilterToSelected 方法
+void MainWindow::applyFilterToSelected(const QString &filterName)
+{
+    if (!selectedItem) return;
+
+    // 这里可以根据filterName应用不同的滤镜
+    // 简化版：应用灰度滤镜
+
+    QPixmap original = selectedItem->pixmap();
+    QPixmap filtered = ImageEditor::applyFilter(original, FILTER_GRAYSCALE);
+    selectedItem->setPixmap(filtered);
+
+    ui->statusBar->showMessage(QString("已应用滤镜: %1").arg(filterName), 2000);
+}
+
+void MainWindow::setupCustomGridTemplate(int rows, int cols)
+{
+    if (rows <= 0 || cols <= 0) return;
+
+    // 计算场景中的有效区域（减去边距）
+    QRectF sceneRect = scene->sceneRect();
+    qreal margin = 20;
+    qreal usableWidth = sceneRect.width() - 2 * margin;
+    qreal usableHeight = sceneRect.height() - 2 * margin;
+
+    // 计算每个格子的尺寸
+    qreal cellWidth = usableWidth / cols;
+    qreal cellHeight = usableHeight / rows;
+
+    // 重新排列现有图片
+    for (int i = 0; i < photoItems.size(); ++i) {
+        EditablePixmapItem *item = photoItems[i];
+
+        // 计算行和列
+        int row = i / cols;
+        int col = i % cols;
+
+        // 如果超过格子数量，停止排列
+        if (row >= rows) break;
+
+        // 计算位置
+        qreal x = margin + col * cellWidth + cellWidth / 2;
+        qreal y = margin + row * cellHeight + cellHeight / 2;
+
+        // 设置位置（将中心点对齐到格子中心）
+        item->setPos(x - item->boundingRect().width() / 2,
+                     y - item->boundingRect().height() / 2);
+
+        // 缩放图片以适应格子
+        QRectF itemRect = item->boundingRect();
+        qreal scaleX = cellWidth * 0.8 / itemRect.width();  // 80%的格子宽度
+        qreal scaleY = cellHeight * 0.8 / itemRect.height(); // 80%的格子高度
+        qreal scale = qMin(scaleX, scaleY);
+
+        if (scale < 1.0) {
+            item->setScale(scale);
+        }
+    }
+
+    // 更新UI
+    ui->templateList->addItem(QString("自定义%1x%2").arg(rows).arg(cols));
+    ui->templateList->setCurrentRow(ui->templateList->count() - 1);
+}
 
 MainWindow::~MainWindow()
 {

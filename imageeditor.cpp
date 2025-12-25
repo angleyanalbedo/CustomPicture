@@ -1566,3 +1566,80 @@ QPixmap ImageEditor::whitenTeeth(const QPixmap &original, qreal intensity)
 
     return QPixmap::fromImage(result);
 }
+
+
+
+// 应用模糊效果
+QPixmap ImageEditor::applyBlur(const QPixmap &original, int radius)
+{
+    if (original.isNull() || radius <= 0) {
+        return original;
+    }
+
+    // 使用高斯模糊
+    return applyFilter(original, FILTER_BLUR, radius / 10.0);
+}
+
+// 图像混合
+QPixmap ImageEditor::blendImages(const QPixmap &base, const QPixmap &overlay,
+                                 qreal opacity, BlendMode mode)
+{
+    if (base.isNull()) return overlay;
+    if (overlay.isNull()) return base;
+
+    // 确保overlay与base尺寸相同
+    QPixmap scaledOverlay = overlay.scaled(base.size(), Qt::KeepAspectRatioByExpanding);
+
+    // 创建结果图像
+    QPixmap result = base.copy();
+    QPainter painter(&result);
+
+    // 设置混合模式
+    switch (mode) {
+    case Normal:
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        break;
+    case Multiply:
+        painter.setCompositionMode(QPainter::CompositionMode_Multiply);
+        break;
+    case Screen:
+        painter.setCompositionMode(QPainter::CompositionMode_Screen);
+        break;
+    case Overlay:
+        painter.setCompositionMode(QPainter::CompositionMode_Overlay);
+        break;
+    case SoftLight:
+        painter.setCompositionMode(QPainter::CompositionMode_SoftLight);
+        break;
+    case HardLight:
+        painter.setCompositionMode(QPainter::CompositionMode_HardLight);
+        break;
+    case ColorDodge:
+        painter.setCompositionMode(QPainter::CompositionMode_ColorDodge);
+        break;
+    case ColorBurn:
+        painter.setCompositionMode(QPainter::CompositionMode_ColorBurn);
+        break;
+    case Darken:
+        painter.setCompositionMode(QPainter::CompositionMode_Darken);
+        break;
+    case Lighten:
+        painter.setCompositionMode(QPainter::CompositionMode_Lighten);
+        break;
+    case Difference:
+        painter.setCompositionMode(QPainter::CompositionMode_Difference);
+        break;
+    case Exclusion:
+        painter.setCompositionMode(QPainter::CompositionMode_Exclusion);
+        break;
+    }
+
+    // 设置不透明度
+    painter.setOpacity(opacity);
+
+    // 绘制叠加图像
+    painter.drawPixmap(0, 0, scaledOverlay);
+    painter.end();
+
+    return result;
+}

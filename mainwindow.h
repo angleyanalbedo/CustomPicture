@@ -9,6 +9,7 @@
 #include <QCameraImageCapture>
 #include <QListWidgetItem>
 #include <QMap>
+#include <QPrinter>
 
 #include "imageeditor.h"
 
@@ -80,6 +81,9 @@ private slots:
     void updateStatusBar();
     void updateToolButtons();
 
+    void exportToPdf(const QString &fileName);
+    void setupCustomGridTemplate(int rows, int cols);
+
 private:
     Ui::MainWindow *ui;
 
@@ -125,6 +129,8 @@ private:
     // 工具方法
     QPixmap createPosterPreview();
     QString getSaveFileName(const QString &title, const QString &filter);
+
+
 };
 
 #endif // MAINWINDOW_H
