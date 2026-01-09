@@ -267,7 +267,7 @@ void MainWindow::updateToolButtons()
     ui->btnExport->setEnabled(hasPhotos);
     ui->btnClear->setEnabled(hasPhotos);
 }
-// ... 接上面的 MainWindow 实现
+
 
 void MainWindow::setupDefaultTemplates()
 {
