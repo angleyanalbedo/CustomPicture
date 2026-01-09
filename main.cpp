@@ -14,12 +14,12 @@ public:
     Q_INVOKABLE void capture() {
         auto frame = cam.capture();
         auto layout = TemplateManager::load(
-            "/usr/share/app/assets/templates/paper_01");
+            "qrc:/assets/templates/paper_01.jpg");
 
         ImageComposer::compose(
             frame,
             layout,
-            "/data/output/final.jpg"
+            "final.jpg"
             );
     }
 
