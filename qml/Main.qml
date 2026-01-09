@@ -16,10 +16,16 @@ ApplicationWindow {
         }
 
         Image {
+            id: liveImg
             width: 600
             height: 800
-            // source: "file:///data/output/final.jpg"
             fillMode: Image.PreserveAspectFit
+            source: "image://live/0"
+
+            Connections {
+                target: backend
+                function onLiveChanged() { liveImg.source = ""; liveImg.source = "image://live/0"; }
+            }
         }
     }
 }

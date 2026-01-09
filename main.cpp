@@ -1,42 +1,23 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QTimer>
 
-#include "backend/CameraManager.h"
-#include "backend/TemplateManager.h"
-#include "backend/ImageComposer.h"
+#include <backend/LiveImageProvider.h>
+#include <backend/backendmem.h>
 
-class Backend : public QObject {
-    Q_OBJECT
-public:
-    Backend() { cam.start(); }
-
-    Q_INVOKABLE void capture() {
-        auto frame = cam.capture();
-        auto layout = TemplateManager::load(
-            "qrc:/assets/templates/paper_01.jpg");
-
-        ImageComposer::compose(
-            frame,
-            layout,
-            "final.jpg"
-            );
-    }
-
-private:
-    CameraManager cam;
-};
+#include "backend/backenddisk.h"
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
 
-    Backend backend;
+    BackendMem backend(&engine);
     engine.rootContext()->setContextProperty("backend", &backend);
 
     engine.load(QUrl(QStringLiteral("qrc:/qml/Main.qml")));
     return app.exec();
 }
 
-#include "main.moc"
+
 

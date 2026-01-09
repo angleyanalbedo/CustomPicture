@@ -7,4 +7,8 @@ public:
     static bool compose(const cv::Mat& cameraFrame,
                         const TemplateLayout& layout,
                         const std::string& outPath);
+
+    static bool compose(const cv::Mat& cameraFrame,
+                        const TemplateLayout& layout,
+                        cv::Mat& outMat);
 };

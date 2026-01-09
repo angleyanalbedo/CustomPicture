@@ -5,7 +5,7 @@
 
 TemplateLayout TemplateManager::load(const QString& dir) {
     TemplateLayout layout;
-    layout.paperPath = dir + "/paper.png";
+    layout.paperPath = dir + "/paper.jpg";
 
     QFile f(dir + "/layout.json");
     f.open(QIODevice::ReadOnly);

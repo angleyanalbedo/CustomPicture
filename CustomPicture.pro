@@ -12,6 +12,8 @@ SOURCES += \
     backend/CameraManager.cpp \
     backend/ImageComposer.cpp \
     backend/TemplateManager.cpp \
+    backend/backenddisk.cpp \
+    backend/backendmem.cpp \
     editablepixmapitem.cpp \
     imageeditor.cpp \
     main.cpp \
@@ -21,7 +23,10 @@ SOURCES += \
 HEADERS += \
     backend/CameraManager.h \
     backend/ImageComposer.h \
+    backend/LiveImageProvider.h \
     backend/TemplateManager.h \
+    backend/backenddisk.h \
+    backend/backendmem.h \
     editablepixmapitem.h \
     imageeditor.h \
     mainwindow.h \
