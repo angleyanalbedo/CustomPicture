@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+<class>cmeraWindows</class>
+<widget class="QMainWindow" name="cmeraWindows">
+    <property name="geometry">
+        <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>400</width>
+            <height>700</height>
+        </rect>
+    </property>
+    <property name="windowTitle">
+        <string>相机背景合成</string>
+    </property>
+
+    <!-- 中央部件 -->
+    <widget class="QWidget" name="centralWidget">
+        <layout class="QVBoxLayout" name="mainLayout">
+            <!-- 标题 -->
+            <item>
+                <widget class="QLabel" name="labelTitle">
+                    <property name="text">
+                        <string>📷 相机背景合成</string>
+                    </property>
+                    <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                    </property>
+                    <property name="styleSheet">
+                        <string notr="true">font-size: 20px; font-weight: bold; padding: 10px;</string>
+                    </property>
+                </widget>
+            </item>
+
+            <!-- 背景图片显示区域 -->
+            <item>
+                <widget class="QWidget" name="backgroundArea">
+                    <property name="minimumHeight">
+                        <number>400</number>
+                    </property>
+                    <property name="styleSheet">
+                        <string notr="true">background-color: #000000; border-radius: 10px;</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="backgroundLayout">
+                        <!-- 背景图片显示 -->
+                        <item>
+                            <widget class="QLabel" name="labelBackground">
+                                <property name="alignment">
+                                    <set>Qt::AlignCenter</set>
+                                </property>
+                                <property name="minimumHeight">
+                                    <number>350</number>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">border: none;</string>
+                                </property>
+                                <property name="text">
+                                    <string>背景图片预览</string>
+                                </property>
+                            </widget>
+                        </item>
+
+                        <!-- 背景切换控制 -->
+                        <item>
+                            <widget class="QWidget" name="bgControlWidget">
+                                <layout class="QHBoxLayout" name="bgControlLayout">
+                                    <item>
+                                        <widget class="QPushButton" name="btnPrevBg">
+                                            <property name="text">
+                                                <string>◀ 上一张</string>
+                                            </property>
+                                            <property name="minimumHeight">
+                                                <number>40</number>
+                                            </property>
+                                            <property name="styleSheet">
+                                                <string notr="true">
+                                                    QPushButton {
+                                                        background-color: #666666;
+                                                        color: white;
+                                                        border-radius: 5px;
+                                                        font-size: 14px;
+                                                    }
+                                                    QPushButton:pressed {
+                                                        background-color: #555555;
+                                                    }
+                                                </string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <item>
+                                        <widget class="QLabel" name="labelBgIndex">
+                                            <property name="text">
+                                                <string>1/5</string>
+                                            </property>
+                                            <property name="alignment">
+                                                <set>Qt::AlignCenter</set>
+                                            </property>
+                                            <property name="styleSheet">
+                                                <string notr="true">color: white; font-size: 14px;</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+
+                                    <item>
+                                        <widget class="QPushButton" name="btnNextBg">
+                                            <property name="text">
+                                                <string>下一张 ▶</string>
+                                            </property>
+                                            <property name="minimumHeight">
+                                                <number>40</number>
+                                            </property>
+                                            <property name="styleSheet">
+                                                <string notr="true">
+                                                    QPushButton {
+                                                        background-color: #666666;
+                                                        color: white;
+                                                        border-radius: 5px;
+                                                        font-size: 14px;
+                                                    }
+                                                    QPushButton:pressed {
+                                                        background-color: #555555;
+                                                    }
+                                                </string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                        </item>
+                    </layout>
+                </widget>
+            </item>
+
+            <!-- 相机预览区域（固定在底部） -->
+            <item>
+                <widget class="QGroupBox" name="groupBoxCamera">
+                    <property name="title">
+                        <string>相机预览</string>
+                    </property>
+                    <property name="minimumHeight">
+                        <number>200</number>
+                    </property>
+                    <layout class="QVBoxLayout" name="cameraLayout">
+                        <!-- 相机视图容器 -->
+                        <item>
+                            <widget class="QWidget" name="cameraContainer">
+                                <layout class="QVBoxLayout" name="cameraContainerLayout">
+                                    <!-- 相机视图将在这里动态添加 -->
+                                </layout>
+                            </widget>
+                        </item>
+
+                        <!-- 状态提示 -->
+                        <item>
+                            <widget class="QLabel" name="labelCameraStatus">
+                                <property name="text">
+                                    <string>相机准备就绪</string>
+                                </property>
+                                <property name="alignment">
+                                    <set>Qt::AlignCenter</set>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">color: #666666; font-size: 12px; padding: 5px;</string>
+                                </property>
+                            </widget>
+                        </item>
+                    </layout>
+                </widget>
+            </item>
+
+            <!-- 拍照按钮 -->
+            <item>
+                <widget class="QPushButton" name="btnCapture">
+                    <property name="text">
+                        <string>📸 拍照保存</string>
+                    </property>
+                    <property name="minimumHeight">
+                        <number>60</number>
+                    </property>
+                    <property name="styleSheet">
+                        <string notr="true">
+                            QPushButton {
+                                background-color: #FF3B30;
+                                color: white;
+                                border-radius: 10px;
+                                font-size: 18px;
+                                font-weight: bold;
+                                margin: 10px;
+                            }
+                            QPushButton:pressed {
+                                background-color: #E0281E;
+                            }
+                            QPushButton:disabled {
+                                background-color: #cccccc;
+                            }
+                        </string>
+                    </property>
+                    <property name="enabled">
+                        <bool>false</bool>
+                    </property>
+                </widget>
+            </item>
+
+            <!-- 状态栏 -->
+            <item>
+                <widget class="QLabel" name="labelStatus">
+                    <property name="text">
+                        <string>就绪</string>
+                    </property>
+                    <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                    </property>
+                    <property name="styleSheet">
+                        <string notr="true">color: #888888; font-size: 12px; padding: 5px; border-top: 1px solid #eeeeee;</string>
+                    </property>
+                </widget>
+            </item>
+        </layout>
+    </widget>
+</widget>
+<resources/>
+<connections/>
+</ui>

@@ -14,10 +14,13 @@ SOURCES += \
     backend/TemplateManager.cpp \
     backend/backenddisk.cpp \
     backend/backendmem.cpp \
+    bigheadpicturewindow.cpp \
+    cmerawindows.cpp \
     editablepixmapitem.cpp \
     imageeditor.cpp \
     main.cpp \
     mainwindow.cpp \
+    mainwindow2.cpp \
     postertemplate.cpp
 
 HEADERS += \
@@ -27,13 +30,19 @@ HEADERS += \
     backend/TemplateManager.h \
     backend/backenddisk.h \
     backend/backendmem.h \
+    bigheadpicturewindow.h \
+    cmerawindows.h \
     editablepixmapitem.h \
     imageeditor.h \
     mainwindow.h \
+    mainwindow2.h \
     postertemplate.h
 
 FORMS += \
-    mainwindow.ui
+    bigheadpicturewindow.ui \
+    cmerawindows.ui \
+    mainwindow.ui \
+    mainwindow2.ui
 
 SYSROOT = /opt/atk-dlrk356x-toolchain/aarch64-buildroot-linux-gnu/sysroot
 
