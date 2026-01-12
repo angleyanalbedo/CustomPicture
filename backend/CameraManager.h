@@ -1,7 +1,7 @@
 #pragma once
+#define RK3568 1
 #include <QObject>
-#include <opencv4/opencv2/opencv.hpp>
-
+#include <opencv2/opencv.hpp>
 class CameraManager : public QObject {
     Q_OBJECT
 public:
