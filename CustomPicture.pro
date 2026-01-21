@@ -12,6 +12,7 @@ SOURCES += \
     camerapage.cpp \
     cameraview.cpp \
     countdown.cpp \
+    cvcapture.cpp \
     main.cpp \
     mainwindow.cpp \
     pageflipeffect.cpp \
@@ -22,6 +23,7 @@ HEADERS += \
     camerapage.h \
     cameraview.h \
     countdown.h \
+    cvcapture.h \
     mainwindow.h \
     pageflipeffect.h \
     paypage.h \
@@ -84,4 +86,4 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 
 RESOURCES += \
-    resource.qrc
+    resources.qrc

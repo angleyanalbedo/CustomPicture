@@ -29,8 +29,70 @@ CameraPage::CameraPage(QWidget *parent)
     initAnimations();
     timer = new QTimer(this);
     initSignals();
+
+    /* === 摄像头 === */
+    m_capture = new CvCapture(0, this);          // /dev/video9
+    connect(m_capture, &CvCapture::frameReady, this, &CameraPage::onNewFrame);
+    connect(m_capture, &CvCapture::errorString, this, [](const QString &e){
+        qDebug() << "Camera error:" << e;
+    });
+    m_capture->start();
+
     // 初始化第一个背景
     updateBackground();
+    // 初始化第一个背景
+    updateBackground();
+}
+void CameraPage::onNewFrame(const QImage &img)
+{
+    m_lastFrame = img;                 // 始终保存最新帧
+    if (!cameraView->isVisible()) return;
+    cameraView->setPixmap(
+        QPixmap::fromImage(img).scaled(cameraView->size(),
+                                       Qt::KeepAspectRatio,
+                                       Qt::SmoothTransformation));
+}
+void CameraPage::updateCountdown()
+{
+    countdown--;
+    countdownLabel->setText(QString::number(countdown));
+    if (countdown <= 0) {
+        timer->stop();
+        countdownLabel->hide();
+        reallyCapture();               // <-- 拍照
+    }
+}
+
+void CameraPage::reallyCapture()
+{
+    if (m_lastFrame.isNull()) {
+        qDebug() << "没有可用帧";
+        emit photoFinished({});
+        return;
+    }
+    // 生成文件名
+    QString fileName = QString("photo_%1.jpg")
+                           .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+    QString fullPath = QDir::currentPath() + "/" + fileName;
+    // 保存
+    bool ok = m_lastFrame.save(fullPath, nullptr, 95);
+    if (!ok) {
+        qDebug() << "保存失败";
+        emit photoFinished({});
+        return;
+    }
+    m_savePath = fullPath;
+    qDebug() << "照片已保存:" << fullPath;
+
+    // 进入后续动画
+    enterStage3();
+    // 最终动画全部结束后再把路径抛出去
+    connect(this,
+            qOverload<const QString &>(&CameraPage::photoFinished),
+            this,
+            [this]{
+                emit photoFinished(m_savePath);
+            });
 }
 
 void CameraPage::initUI()
@@ -322,24 +384,7 @@ void CameraPage::startCountdown()
 
 }
 
-void CameraPage::updateCountdown()
-{
-    countdown--;
-    countdownLabel->setText(QString::number(countdown));
 
-    if (countdown <= 0) {
-        // timer->stop();
-        // countdownLabel->clear();
-        // shootBtn->setEnabled(true);
-
-        // // 这里后面替换为真实拍照逻辑
-        // emit photoFinished();
-        timer->stop();
-        countdownLabel->hide();
-
-        enterStage3();   // ← 接入阶段3
-    }
-}
 
 void CameraPage::nextBackground()
 {

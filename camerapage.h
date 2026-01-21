@@ -10,6 +10,11 @@
 #include <QPixmap>
 #include <QStringList>
 #include "pageflipeffect.h"
+#include <QImage>
+#include <QDateTime>
+#include <QDir>
+#include "cvcapture.h"
+class CvCapture;
 
 class CameraPage : public QWidget
 {
@@ -131,8 +136,17 @@ private:
 
     int calcArrowButtonSize() const;//箭头大小随窗口动态变动
 
+
+    CvCapture *m_capture = nullptr;
+    QImage m_lastFrame;          // 拍照瞬间的帧
+    QString m_savePath;          // 本次照片保存路径
+private slots:
+    void onNewFrame(const QImage &img);
+    void reallyCapture();        // 倒计时到 0 时调用
+
 signals:
     void photoFinished();
+    void photoFinished(const QString &filePath);  // 把路径带给上层
 
 };
 #endif // CAMERAPAGE_H
