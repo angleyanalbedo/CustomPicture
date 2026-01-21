@@ -9,40 +9,23 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    backend/CameraManager.cpp \
-    backend/ImageComposer.cpp \
-    backend/TemplateManager.cpp \
-    backend/backenddisk.cpp \
-    backend/backendmem.cpp \
-    bigheadpicturewindow.cpp \
-    cmerawindows.cpp \
-    editablepixmapitem.cpp \
-    imageeditor.cpp \
+    camerapage.cpp \
+    cameraview.cpp \
+    countdown.cpp \
     main.cpp \
     mainwindow.cpp \
-    mainwindow2.cpp \
-    postertemplate.cpp
+    pageflipeffect.cpp \
+    paypage.cpp \
+    printpage.cpp
 
 HEADERS += \
-    backend/CameraManager.h \
-    backend/ImageComposer.h \
-    backend/LiveImageProvider.h \
-    backend/TemplateManager.h \
-    backend/backenddisk.h \
-    backend/backendmem.h \
-    bigheadpicturewindow.h \
-    cmerawindows.h \
-    editablepixmapitem.h \
-    imageeditor.h \
+    camerapage.h \
+    cameraview.h \
+    countdown.h \
     mainwindow.h \
-    mainwindow2.h \
-    postertemplate.h
-
-FORMS += \
-    bigheadpicturewindow.ui \
-    cmerawindows.ui \
-    mainwindow.ui \
-    mainwindow2.ui
+    pageflipeffect.h \
+    paypage.h \
+    printpage.h
 
 # SYSROOT = /opt/atk-dlrk356x-toolchain/aarch64-buildroot-linux-gnu/sysroot
 
@@ -98,8 +81,7 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-DISTFILES += \
-    qml/Main.qml
+
 
 RESOURCES += \
     resource.qrc

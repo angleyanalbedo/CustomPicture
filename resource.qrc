@@ -1,7 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>qml/Main.qml</file>
-        <file>assets/templates/paper_01/paper.jpg</file>
-        <file>assets/templates/paper_01/layout.json</file>
-    </qresource>
-</RCC>
