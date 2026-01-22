@@ -177,8 +177,9 @@ void CameraPage::initButtons()
         );
 
     // ========= 左右箭头按钮 =========
-    prevBtn = new QPushButton(this);
-    nextBtn = new QPushButton(this);
+    // 修改父对象为 bottomContainer
+    prevBtn = new QPushButton(bottomContainer);
+    nextBtn = new QPushButton(bottomContainer);
 
     // 1️⃣ 按钮动态大小（和你 layoutButtons 对齐）
     int arrowSize = calcArrowButtonSize();
@@ -332,7 +333,7 @@ void CameraPage::resizeEvent(QResizeEvent *event)
     QWidget::resizeEvent(event);
 
     // 计算布局比例
-    int topHeight = height() * 0.7;
+    int topHeight = height() * 0.82;
     int bottomHeight = height() - topHeight;
 
     // 调整容器位置
@@ -733,35 +734,42 @@ void CameraPage::layoutCameraAndCountdown(int topHeight)
 // 4️⃣ 按钮布局
 void CameraPage::layoutButtons()
 {
-    QSize windowSize = size();
+    // 1. 获取当前底部容器的实际尺寸
+    int containerW = bottomContainer->width();
+    int containerH = bottomContainer->height();
 
-    // "立即开拍"按钮
-    int shootBtnWidth = 250, shootBtnHeight = 80;
-    int shootBtnX = (bottomContainer->width() - shootBtnWidth) / 2;
-    int shootBtnY = (bottomContainer->height() - shootBtnHeight) / 2;
-    shootBtnY = qMin(shootBtnY, windowSize.height() - shootBtnHeight - 20);
+    // --- 2. "立即开拍"按钮居中 ---
+    int shootBtnWidth = 250;
+    int shootBtnHeight = 80;
+    // 如果容器高度不足以放下 80px，可以考虑动态缩放高度，这里暂时居中
+    int shootBtnX = (containerW - shootBtnWidth) / 2;
+    int shootBtnY = (containerH - shootBtnHeight) / 2;
+
     shootBtn->setGeometry(shootBtnX, shootBtnY, shootBtnWidth, shootBtnHeight);
 
-    // 箭头按钮
-         //动态箭头按钮大小
-    int arrowBtnSize = calcArrowButtonSize();
+    // --- 3. 箭头按钮布局 (现在它们在 bottomContainer 内部) ---
+    int arrowBtnSize = calcArrowButtonSize(); // 你之前的计算逻辑
     prevBtn->setFixedSize(arrowBtnSize, arrowBtnSize);
     nextBtn->setFixedSize(arrowBtnSize, arrowBtnSize);
     prevBtn->setIconSize(QSize(arrowBtnSize, arrowBtnSize));
     nextBtn->setIconSize(QSize(arrowBtnSize, arrowBtnSize));
 
-    int cameraX = cameraView->x();
-    int cameraY = cameraView->y();
-    int cameraHeight = cameraView->height();
-    int cameraWidth = cameraView->width();
-    int arrowBtnY = cameraY + (cameraHeight - arrowBtnSize) / 2;
-    arrowBtnY = qBound(20, arrowBtnY, windowSize.height() - arrowBtnSize - 20);
+    // 垂直居中
+    int arrowBtnY = (containerH - arrowBtnSize) / 2;
 
-    int prevBtnX = qMax(10, cameraX - arrowBtnSize - 10);
-    int nextBtnX = qMin(windowSize.width() - arrowBtnSize - 10, cameraX + cameraWidth + 10);
+    // 水平位置：左右各留一定边距 (比如 40px)
+    int margin = 40;
+    int prevBtnX = margin;
+    int nextBtnX = containerW - arrowBtnSize - margin;
 
+    // 设置几何尺寸
     prevBtn->setGeometry(prevBtnX, arrowBtnY, arrowBtnSize, arrowBtnSize);
     nextBtn->setGeometry(nextBtnX, arrowBtnY, arrowBtnSize, arrowBtnSize);
+
+    // 确保它们在背景图之上
+    prevBtn->raise();
+    nextBtn->raise();
+    shootBtn->raise();
 }
 
 // 5️⃣ 底部文字
