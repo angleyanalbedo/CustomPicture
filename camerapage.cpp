@@ -9,6 +9,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QResizeEvent>
+#include "imgproc.h"
 
 CameraPage::CameraPage(QWidget *parent)
     : QWidget(parent),
@@ -70,29 +71,51 @@ void CameraPage::reallyCapture()
         emit photoFinished({});
         return;
     }
-    // 生成文件名
-    QString fileName = QString("photo_%1.jpg")
-                           .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
-    QString fullPath = QDir::currentPath() + "/" + fileName;
-    // 保存
-    bool ok = m_lastFrame.save(fullPath, nullptr, 95);
-    if (!ok) {
-        qDebug() << "保存失败";
-        emit photoFinished({});
+
+    // 1. 准备背景图 (从 Qt 资源加载并转为 Mat)
+    QImage bgQImage(":images/bg1.png");
+    if (bgQImage.isNull()) {
+        qDebug() << "无法加载背景资源";
         return;
     }
+    cv::Mat bgMat = ImgProc::qImageToMat(bgQImage);
+
+    // 2. 准备前景图 (当前的拍照帧)
+    cv::Mat fgMat = ImgProc::qImageToMat(m_lastFrame);
+
+    // 3. 执行合成
+    // 这里传入你希望图片出现在报纸上的位置，例如 x=260, y=260, w=450, h=310
+    cv::Rect targetArea(260, 260, 450, 310);
+    cv::Mat resultMat = ImgProc::embedImage(bgMat, fgMat, targetArea);
+
+    // 4. 生成最终保存路径
+    QString fileName = QString("newspaper_%1.jpg")
+                           .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+    QString fullPath = QDir::currentPath() + "/" + fileName;
+
+    // 5. 使用 OpenCV 保存最终合成图
+    std::string exportPath = fullPath.toLocal8Bit().toStdString();
+    bool ok = cv::imwrite(exportPath, resultMat);
+
+    if (!ok) {
+        qDebug() << "OpenCV 保存合成图失败";
+        // emit photoFinished({});
+        return;
+    }
+
     m_savePath = fullPath;
-    qDebug() << "照片已保存:" << fullPath;
+    qDebug() << "合成照片已保存:" << fullPath;
 
     // 进入后续动画
     enterStage3();
-    // 最终动画全部结束后再把路径抛出去
+
     connect(this,
             qOverload<const QString &>(&CameraPage::photoFinished),
             this,
             [this]{
                 emit photoFinished(m_savePath);
             });
+
 }
 
 void CameraPage::initUI()
@@ -136,8 +159,8 @@ void CameraPage::initUI()
 
 void CameraPage::initBackgrounds()
 {
-    backgroundImages.append(":/images/chrismas.jpg");
-    backgroundImages.append(":/images/chrismas1.jpg");
+    backgroundImages.append(":/images/bg1.png");
+    backgroundImages.append(":/images/bg2.png");
 
     QPixmap bottomBg(":/images/bottom_bg.png");
     bottomBackgroundLabel->setPixmap(bottomBg);

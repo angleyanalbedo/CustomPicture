@@ -13,6 +13,7 @@ SOURCES += \
     cameraview.cpp \
     countdown.cpp \
     cvcapture.cpp \
+    imgproc.cpp \
     main.cpp \
     mainwindow.cpp \
     pageflipeffect.cpp \
@@ -24,6 +25,7 @@ HEADERS += \
     cameraview.h \
     countdown.h \
     cvcapture.h \
+    imgproc.h \
     mainwindow.h \
     pageflipeffect.h \
     paypage.h \
