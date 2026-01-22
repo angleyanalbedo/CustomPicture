@@ -296,30 +296,34 @@ void CameraPage::updateBackground()
     }
     // 关键修改：使用高质量缩放，完全填充但不拉伸
     if (pixmap.size() != windowSize) {
-        // 计算缩放比例，保持宽高比的同时填充整个区域
-        qreal scaleX = (qreal)windowSize.width() / pixmap.width();
-        qreal scaleY = (qreal)windowSize.height() / pixmap.height();
-        qreal scale = qMax(scaleX, scaleY);  // 取较大的比例确保完全填充
+        // // 计算缩放比例，保持宽高比的同时填充整个区域
+        // qreal scaleX = (qreal)windowSize.width() / pixmap.width();
+        // qreal scaleY = (qreal)windowSize.height() / pixmap.height();
+        // qreal scale = qMax(scaleX, scaleY);  // 取较大的比例确保完全填充
 
-        // 计算缩放后的尺寸
-        QSize scaledSize = pixmap.size() * scale;
+        // // 计算缩放后的尺寸
+        // QSize scaledSize = pixmap.size() * scale;
 
-        // 高质量缩放
-        QPixmap scaledPixmap = pixmap.scaled(scaledSize,
-                                             Qt::KeepAspectRatio,  // 保持宽高比
-                                             Qt::SmoothTransformation);  // 平滑变换
+        // // 高质量缩放
+        // QPixmap scaledPixmap = pixmap.scaled(scaledSize,
+        //                                      Qt::KeepAspectRatio,  // 保持宽高比
+        //                                      Qt::SmoothTransformation);  // 平滑变换
 
-        // 如果缩放后尺寸大于窗口，裁剪到窗口大小
-        if (scaledSize.width() > windowSize.width() ||
-            scaledSize.height() > windowSize.height()) {
+        // // 如果缩放后尺寸大于窗口，裁剪到窗口大小
+        // if (scaledSize.width() > windowSize.width() ||
+        //     scaledSize.height() > windowSize.height()) {
 
-            // 计算裁剪区域（居中裁剪）
-            int x = (scaledSize.width() - windowSize.width()) / 2;
-            int y = (scaledSize.height() - windowSize.height()) / 2;
-            scaledPixmap = scaledPixmap.copy(x, y, windowSize.width(), windowSize.height());
-        }
+        //     // 计算裁剪区域（居中裁剪）
+        //     int x = (scaledSize.width() - windowSize.width()) / 2;
+        //     int y = (scaledSize.height() - windowSize.height()) / 2;
+        //     scaledPixmap = scaledPixmap.copy(x, y, windowSize.width(), windowSize.height());
+        // }
 
-        backgroundLabel->setPixmap(scaledPixmap);
+        // backgroundLabel->setPixmap(scaledPixmap);
+
+        backgroundLabel->setScaledContents(true);
+        backgroundLabel->setPixmap(pixmap);
+
     } else {
         // 图片大小正好匹配窗口
         backgroundLabel->setPixmap(pixmap);
@@ -709,26 +713,44 @@ void CameraPage::updateBackgroundGeometry()
 void CameraPage::layoutCameraAndCountdown(int topHeight)
 {
     QSize windowSize = size();
-    int cameraWidth = qMin(windowSize.width() / 2, windowSize.width() - 40);
-    int cameraHeight = qMin(windowSize.height() * 4 / 10, windowSize.height() - 200);
+    int topWidth = windowSize.width();
+
+    // --- 1. 布局 cameraView (保持你之前的居中逻辑) ---
+    int cameraWidth = topWidth;
+    int cameraHeight = topHeight/4;
     cameraHeight = qMax(100, cameraHeight);
 
-    int cameraX = (windowSize.width() - cameraWidth) / 2;
-    int cameraY = qMax(50, static_cast<int>(topHeight * 0.15));
-
+    int cameraX = 0;
+    int cameraY = topHeight/4;
     cameraView->setGeometry(cameraX, cameraY, cameraWidth, cameraHeight);
-    countdownLabel->setGeometry(cameraX, cameraY, cameraWidth, cameraHeight);
 
-    // 设置字体大小自适应
+    // --- 2. 布局 countdownLabel (新的要求) ---
+    // 位置：从 topHeight 的 1/4 开始
+    int countdownY = topHeight / 4;
+    // 高度：到 1/2 结束，所以高度也是 topHeight 的 1/4
+    int countdownHeight = topHeight / 4;
+
+    // 宽度：整个 topContainer 的宽度
+    countdownLabel->setGeometry(0, countdownY, topWidth, countdownHeight);
+
+    // --- 3. 字体与样式 ---
+    // 根据 countdownHeight 动态计算字号，确保视觉比例协调
+    int fontSize = qBound(40, countdownHeight / 2, 150);
+
     QFont f;
-    int fontSize = qBound(48, cameraHeight / 2, 120);
-    f.setPointSize(fontSize);
+    f.setPixelSize(fontSize); // 使用 PixelSize 在不同分辨率下更稳定
     f.setBold(true);
+
     countdownLabel->setFont(f);
     countdownLabel->setAlignment(Qt::AlignCenter);
+
+    // 注意：既然要跨越背景，通常背景设为透明
     countdownLabel->setStyleSheet(
-        "QLabel { color: #FF0000; background-color: rgba(0,0,0,120); }"
+        "QLabel { color: #FF0000; background-color: transparent; }"
         );
+
+    // 确保倒计时在最顶层，不被 cameraView 遮挡
+    countdownLabel->raise();
 }
 
 // 4️⃣ 按钮布局
