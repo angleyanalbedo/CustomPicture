@@ -1,2 +1,5 @@
 build/ATK_DLRK3568-Debug build/Desktop_Qt_5_15_2_GCC_64bit-Debug
 build/
+/.qtcreator
+/.qtcreator
+.qtcreator/CustomPicture.pro.user
