@@ -85,7 +85,7 @@ void CameraPage::reallyCapture()
 
     // 3. 执行合成
     // 这里传入你希望图片出现在报纸上的位置，例如 x=260, y=260, w=450, h=310
-    cv::Rect targetArea(260, 260, 450, 310);
+    cv::Rect targetArea(328, 501, 1028, 661);
     cv::Mat resultMat = ImgProc::embedImage(bgMat, fgMat, targetArea);
 
     // 4. 生成最终保存路径
