@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <QStyle>      // 必须添加这个
 #include <QPushButton> // 虽然可能在其他地方包含，但这里明确添加
-#include <QIcon>       // 用于图标
+#include <QIcon>       // 用于图标Z
 #include <QSize>       // 用于设置大小
 #include "pageflipeffect.h"  // 添加自定义翻页效果头文件
 #include <QScreen>
@@ -336,8 +336,14 @@ void CameraPage::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
 
+    // === 新增：计算 UI 缩放比例 ===
+    double sx = double(width())  / DESIGN_WIDTH;
+    double sy = double(height()) / DESIGN_HEIGHT;
+    uiScale = qMin(sx, sy);
+
     // 计算布局比例
-    int topHeight = height() * 0.82;
+    int topHeight = DESIGN_HEIGHT * 0.8 * uiScale;//xxxx
+
     int bottomHeight = height() - topHeight;
 
     // 调整容器位置
@@ -716,8 +722,9 @@ void CameraPage::layoutCameraAndCountdown(int topHeight)
     int topWidth = windowSize.width();
 
     // --- 1. 布局 cameraView (保持你之前的居中逻辑) ---
-    int cameraWidth = topWidth;
-    int cameraHeight = topHeight/4;
+    int cameraWidth  = DESIGN_WIDTH * uiScale;
+    int cameraHeight = DESIGN_HEIGHT * 0.25 * uiScale;//xxxx
+
     cameraHeight = qMax(100, cameraHeight);
 
     int cameraX = 0;

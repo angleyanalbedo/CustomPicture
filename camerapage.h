@@ -28,6 +28,14 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
+
+    // 设计分辨率
+    static constexpr int DESIGN_WIDTH  = 1080;
+    static constexpr int DESIGN_HEIGHT = 1920;
+
+    // 当前缩放比例
+    double uiScale = 1.0;
+
     // ==============================
     // UI控件
     // ==============================
