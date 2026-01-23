@@ -42,26 +42,9 @@ HEADERS += \
 #         -lopencv_highgui \
 #         -lpthread -ldl -lz
 
-
-
-contains(QT_DEVICE_TARGET, "RK3568") {
-    RK3568_SYSROOT = /opt/atk-dlrk356x-toolchain/aarch64-buildroot-linux-gnu/sysroot
-
-    INCLUDEPATH += $$RK3568_SYSROOT/usr/include/opencv4
-    LIBS += -L$$RK3568_SYSROOT/usr/lib
-
-    LIBS += -lopencv_core \
-            -lopencv_imgproc \
-            -lopencv_imgcodecs \
-            -lopencv_videoio \
-            -lopencv_highgui
-
-    LIBS += -lpthread -ldl -lz
-
-    message("Cross-build: using RK3568 sysroot OpenCV")
-
-} win32 {
-    # ---- Windows 环境配置 ----
+# ---- 1. Windows 环境 ----
+win32 {
+# ---- Windows 环境配置 ----
     # 注意：请将下面的路径替换为你电脑上 OpenCV 的真实安装路径
     OPENCV_PATH = D:/source/opencv-4.11.0/build/install
 
@@ -106,28 +89,49 @@ contains(QT_DEVICE_TARGET, "RK3568") {
     QMAKE_POST_LINK += xcopy /d /y $$COPY_SOURCE $$COPY_DEST
 
     message("Post-link: Setting up DLL copy from $$OPENCV_BIN_PATH")
-
-
 }
-else {
-    # ----  1. 头文件  ----
-    INCLUDEPATH += /usr/local/include/opencv4
 
-    # ----  2. 库路径  ----
-    LIBS += -L/usr/local/lib
+# ---- 2. Linux 环境 (区分 ARM 开发板 vs PC 本机) ----
+unix:!macx:!android {
 
-    # ----  3. 常用 OpenCV 模块（缺啥补啥） ----
-    LIBS += -lopencv_core \
-            -lopencv_imgproc \
-            -lopencv_imgcodecs \
-            -lopencv_videoio \
-            -lopencv_highgui
+    # 关键修改：检测目标架构是否为 ARM (aarch64 或 arm64)
+    contains(QT_ARCH, aarch64)|contains(QT_ARCH, arm64) {
+        # >>>> 这里是 RK3568 交叉编译配置 <<<<
 
-    # ----  4. 系统辅助库 ----
-    LIBS += -lpthread -ldl -lz
+        RK3568_SYSROOT = /opt/atk-dlrk356x-toolchain/aarch64-buildroot-linux-gnu/sysroot
 
-    message("Local build: using /usr/local OpenCV")
+        INCLUDEPATH += $$RK3568_SYSROOT/usr/include/opencv4
+        LIBS += -L$$RK3568_SYSROOT/usr/lib
+
+        LIBS += -lopencv_core \
+                -lopencv_imgproc \
+                -lopencv_imgcodecs \
+                -lopencv_videoio \
+                -lopencv_highgui
+
+        LIBS += -lpthread -ldl -lz
+
+        message("Cross-build (RK3568): Using Sysroot OpenCV")
+
+    } else {
+        # >>>> 这里是 Ubuntu PC 本机配置 (x86_64) <<<<
+        # 只有在不是 ARM 的情况下，才加载 /usr/local
+
+        INCLUDEPATH += /usr/local/include/opencv4
+        LIBS += -L/usr/local/lib
+
+        LIBS += -lopencv_core \
+                -lopencv_imgproc \
+                -lopencv_imgcodecs \
+                -lopencv_videoio \
+                -lopencv_highgui
+
+        LIBS += -lpthread -ldl -lz
+
+        message("Local build (x86_64): Using /usr/local OpenCV")
+    }
 }
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
