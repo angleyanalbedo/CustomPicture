@@ -2,12 +2,14 @@
     <qresource prefix="/">
         <file>images/chrismas1.jpg</file>
         <file>images/chrismas.jpg</file>
-        <file>images/paper.jpg</file>
         <file>images/paperbt.png</file>
         <file>images/arrow_left.png</file>
         <file>images/arrow_right.png</file>
         <file>images/bottom_bg.png</file>
-        <file>images/bg1.png</file>
-        <file>images/bg2.png</file>
+        <file>images/paper_module.png</file>
+        <file>images/paper_module2.jpg</file>
+        <file>images/paper.png</file>
+        <file>images/bottom_bg4.png</file>
+        <file>images/paper_module1.png</file>
     </qresource>
 </RCC>

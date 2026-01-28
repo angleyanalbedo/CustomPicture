@@ -3,13 +3,14 @@
 #include <QDebug>
 #include <QStyle>      // 必须添加这个
 #include <QPushButton> // 虽然可能在其他地方包含，但这里明确添加
-#include <QIcon>       // 用于图标Z
+#include <QIcon>       // 用于图标
 #include <QSize>       // 用于设置大小
 #include "pageflipeffect.h"  // 添加自定义翻页效果头文件
 #include <QScreen>
 #include <QGuiApplication>
 #include <QResizeEvent>
 #include "imgproc.h"
+#include <QDate>
 
 CameraPage::CameraPage(QWidget *parent)
     : QWidget(parent),
@@ -73,7 +74,7 @@ void CameraPage::reallyCapture()
     }
 
     // 1. 准备背景图 (从 Qt 资源加载并转为 Mat)
-    QImage bgQImage(":images/bg1.png");
+    QImage bgQImage(":/images/paper.png");
     if (bgQImage.isNull()) {
         qDebug() << "无法加载背景资源";
         return;
@@ -89,7 +90,7 @@ void CameraPage::reallyCapture()
     cv::Mat resultMat = ImgProc::embedImage(bgMat, fgMat, targetArea);
 
     // 4. 生成最终保存路径
-    QString fileName = QString("newspaper_%1.jpg")
+    QString fileName = QString("newspaper_%1.png")
                            .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
     QString fullPath = QDir::currentPath() + "/" + fileName;
 
@@ -148,19 +149,35 @@ void CameraPage::initUI()
     bottomTextLabel = new QLabel(bottomContainer);
     bottomTextLabel->setAlignment(Qt::AlignCenter);
     bottomTextLabel->setStyleSheet(
-        "QLabel { color: #6b3e26; font-size: 30px; font-weight: 800; letter-spacing: 2px; }"
+        "QLabel { color: #6b3e26; font-size: 15px; font-weight: 600; letter-spacing: 1px; }"
         );
+    bottomTextLabel->setText("点击立即开拍\n即可获得同款大日报");
     bottomTextLabel->show();
 
     overlayImageLabel = new QLabel(topContainer);
     overlayImageLabel->setAlignment(Qt::AlignCenter);
     overlayImageLabel->hide();
+
+    // ===== 左上角日期显示 =====
+    dateLabel = new QLabel(this);
+    dateLabel->setText(currentDateString());
+    dateLabel->setStyleSheet(
+        "QLabel {"
+        " color: #5A3A1E;"        // 淡棕色（类似纸张色调）
+        " font-size: 12px;"       // 字体稍微小一点
+        " font-weight: normal;"   // 细一点
+        " background: transparent;"
+        "}"
+        );
+    dateLabel->show();
+
 }
 
 void CameraPage::initBackgrounds()
 {
-    backgroundImages.append(":/images/bg1.png");
-    backgroundImages.append(":/images/bg2.png");
+    backgroundImages.append(":/images/paper_module1.png");
+    backgroundImages.append(":/images/paper_module2.jpg");
+
 
     QPixmap bottomBg(":/images/bottom_bg.png");
     bottomBackgroundLabel->setPixmap(bottomBg);
@@ -169,17 +186,28 @@ void CameraPage::initBackgrounds()
 void CameraPage::initButtons()
 {
     shootBtn = new QPushButton("立即开拍", bottomContainer);
-    shootBtn->setFixedSize(BUTTON_SIZE);
+
     shootBtn->setStyleSheet(
-        "QPushButton { font-size: 20px; font-weight: bold; background-color: #ff4757; color: white; border-radius: 15px; border: 3px solid #ff6b81; }"
-        "QPushButton:hover { background-color: #ff6b81; }"
-        "QPushButton:pressed { background-color: #ff3838; }"
+        "QPushButton { "
+        "   font-size: 12px; "             // 文字大小
+        "   font-weight: bold; "           // 加粗
+        "   color: white; "                // 文字白色
+        "   background-color: #3D2B1F; "   // 黑褐色背景 (你可以根据需要微调这个色值)
+        "   border-radius: 8px; "         // 圆角：值越大越圆。设为高度的一半可实现全圆角
+        "   border: none; "                // 去掉原来的红色边框
+        "} "
+        "QPushButton:hover { "
+        "   background-color: #4D3B2F; "   // 鼠标悬停略微变亮
+        "} "
+        "QPushButton:pressed { "
+        "   background-color: #2D1B0F; "   // 按下略微变暗
+        "}"
         );
 
     // ========= 左右箭头按钮 =========
     // 修改父对象为 bottomContainer
-    prevBtn = new QPushButton(bottomContainer);
-    nextBtn = new QPushButton(bottomContainer);
+    prevBtn = new QPushButton(topContainer);
+    nextBtn = new QPushButton(topContainer);
 
     // 1️⃣ 按钮动态大小（和你 layoutButtons 对齐）
     int arrowSize = calcArrowButtonSize();
@@ -336,15 +364,11 @@ void CameraPage::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
 
-    // === 新增：计算 UI 缩放比例 ===
-    double sx = double(width())  / DESIGN_WIDTH;
-    double sy = double(height()) / DESIGN_HEIGHT;
-    uiScale = qMin(sx, sy);
-
     // 计算布局比例
-    int topHeight = DESIGN_HEIGHT * 0.8 * uiScale;//xxxx
-
+    int topHeight = height() * 0.8;
     int bottomHeight = height() - topHeight;
+
+
 
     // 调整容器位置
     layoutContainers(topHeight, bottomHeight);
@@ -363,6 +387,12 @@ void CameraPage::resizeEvent(QResizeEvent *event)
 
     // 调整覆盖图片
     layoutOverlayImage(topHeight);
+
+    // ===== 左上角日期位置 =====
+    if (dateLabel) {
+        dateLabel->move(10, 5);  // 左 20，上 15，可微调
+        dateLabel->raise();
+    }
 
     // 控件层级管理
     raiseWidgets();
@@ -398,19 +428,24 @@ void CameraPage::showEvent(QShowEvent *event)
 
 void CameraPage::startCountdown()
 {
+    hideDateLabel();   // 👈 一进入倒计时就隐藏日期
+
     // 所有按钮消失
     shootBtn->hide();
     prevBtn->hide();
     nextBtn->hide();
 
-    bottomTextLabel->setText("请看镜头");
+    bottomTextLabel->setText(
+        "倒计时结束前摆好 pose\n"
+        "笑一笑更好看"
+        );
     bottomTextLabel->show();          // 2. 显示提示文字
 
     // ===== 禁用所有操作按钮 =====
     shootBtn->setEnabled(false);
 
     // ===== 初始化倒计时 =====
-    countdown = 10;                    // 建议先 3，调试更舒服
+    countdown = 3;                    // 建议先 3，调试更舒服
     countdownLabel->setText(QString::number(countdown));
     countdownLabel->show();
 
@@ -457,7 +492,7 @@ void CameraPage::enterStage3()
         );
 
     QFont font;
-    font.setPointSize(28);
+    font.setPointSize(20);
     font.setBold(true);
     bottomTextLabel->setFont(font);
     bottomTextLabel->setAlignment(Qt::AlignCenter);
@@ -475,62 +510,72 @@ void CameraPage::enterStage4()
     topContainer->setFixedSize(W, H);
     topContainer->setMask(QRegion(0, 0, W, H));
 
-
-    // 1️⃣ 创建滚动容器（只在第一次创建）
     if (!topContent) {
         topContent = new QWidget(topContainer);
     }
 
-    topContent->setGeometry(0, -H, W, H * 2); // 初始在上方
+    topContent->setGeometry(0, -H, W, H * 2); // 动画容器初始位置
 
-    // 2️⃣ 新背景（蓝）—— 在上
-    QPixmap newPix(":/images/paper.jpg");
-    QLabel *newBg = replaceImageLabel;
-    newBg->setParent(topContent);
-    newBg->setPixmap(
-        newPix.scaled(W, H, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation)
-        );
-    newBg->setGeometry(0, 0, W, H);
-    newBg->show();
+    // --- 上背景：动画用 ---
+    QPixmap animPix(":/images/paper.png");
+    QLabel *animBg = replaceImageLabel;
+    animBg->setParent(topContent);
+    animBg->setPixmap(animPix.scaled(
+        W, H,
+        Qt::KeepAspectRatioByExpanding,
+        Qt::SmoothTransformation));
+    animBg->setGeometry(0, 0, W, H);
+    animBg->show();
 
-    // 3️⃣ 旧背景（红）—— 在下，携带摄像头
+    // --- 下背景：原来的 backgroundLabel（动画用） ---
     backgroundLabel->setParent(topContent);
-    backgroundLabel->setGeometry(0, H, W, H);
-
+    backgroundLabel->setGeometry(0, H, W, H); // 在下方
     cameraView->setParent(backgroundLabel);
     countdownLabel->setParent(backgroundLabel);
-
     cameraView->raise();
     countdownLabel->raise();
 
-    // 4️⃣ 匀速向下滚动（核心）
-    QPropertyAnimation *anim =
-        new QPropertyAnimation(topContent, "pos", this);
-
-    anim->setDuration(2500);                  // 慢，才有质感
+    // --- 下拉动画，慢一倍 ---
+    QPropertyAnimation *anim = new QPropertyAnimation(topContent, "pos", this);
+    anim->setDuration(5000);
     anim->setStartValue(QPoint(0, -H));
     anim->setEndValue(QPoint(0, 0));
-    anim->setEasingCurve(QEasingCurve::Linear); // 匀速！
+    anim->setEasingCurve(QEasingCurve::Linear);
 
     connect(anim, &QPropertyAnimation::finished, this, [=]() {
-        // 1️⃣ 停止裁剪动画容器
-        topContent->hide();
 
-        // 2️⃣ 正式切换为新背景
-        backgroundLabel->setParent(topContainer);
-        backgroundLabel->setPixmap(
-            replaceImageLabel->pixmap(Qt::ReturnByValue)
-            );
-        backgroundLabel->setGeometry(0, 0, W, H);
-        backgroundLabel->show();
+        // ===============================
+        // 1. 上背景固定
+        // ===============================
+        animBg->setParent(topContainer);
+        animBg->setGeometry(0, 0, W, H);
+        animBg->show();
 
-        // 3️⃣ 摄像头回到 topContainer（此时已经在新背景上）
+        // ===============================
+        // 2. ⭐ 真正的下容器背景切换（关键修改）
+        // ===============================
+        QString bottomBgPath = ":/images/bottom_bg4.png"; // ← 换成你指定路径
+        QPixmap finalBg = loadAndScalePixmap(bottomBgPath, bottomContainer->size());
+
+        if (!finalBg.isNull()) {
+            bottomBackgroundLabel->setPixmap(finalBg);
+            bottomBackgroundLabel->setScaledContents(true);
+            bottomBackgroundLabel->setGeometry(bottomContainer->rect());
+            bottomBackgroundLabel->show();
+            bottomBackgroundLabel->lower(); // 确保文字在上面
+        }
+
+        // ===============================
+        // 3. 摄像头恢复
+        // ===============================
         cameraView->setParent(topContainer);
         cameraView->raise();
 
-        // 4️⃣ 清理
-        replaceImageLabel->hide();
-        topContent->move(0, 0);
+        // ===============================
+        // 4. 清理动画容器
+        // ===============================
+        bottomTextLabel->hide();
+        topContent->hide();
     });
 
     anim->start(QAbstractAnimation::DeleteWhenStopped);
@@ -539,129 +584,83 @@ void CameraPage::enterStage4()
 // 启动翻页动画
 void CameraPage::startPageAnimation(int newIndex, bool toRight)
 {
-    if (isAnimating) {
-        qDebug() << "正在动画中，跳过";
-        return;
-    }
-
+    hideDateLabel();
+    if (isAnimating) return;
     isAnimating = true;
 
+    const int W = topContainer->width();
+    const int H = topContainer->height();
 
-
-    // 加载新背景
-    QSize windowSize = size();
-
-    if (isFullScreen()) {
-        windowSize = screen()->size();
-    }
-
+    // 1️⃣ 准备新页面 pixmap（完全匹配 QLabel 大小）
     QPixmap newPixmap(backgroundImages[newIndex]);
     if (newPixmap.isNull()) {
-        qDebug() << "错误：无法加载新背景图片";
-        prevBtn->setEnabled(true);
-        nextBtn->setEnabled(true);
         isAnimating = false;
         return;
     }
 
-    int topHeight = windowSize.height() * 0.7;
-    // 高质量缩放新图片
-    // QPixmap scaledNewPixmap = newPixmap.scaled(windowSize, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-    QPixmap scaledNewPixmap =
-        newPixmap.scaled(
-            QSize(windowSize.width(), topHeight),
-            Qt::KeepAspectRatioByExpanding,
-            Qt::SmoothTransformation
-            );
-    nextPageLabel->setPixmap(scaledNewPixmap);
+    // ⚠️ 这里直接缩放到 W x H，不保持比例
+    QPixmap fixedPixmap = newPixmap.scaled(W, H, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
-    // 设置起始位置
-    QRect startRect, endRect;
+    nextPageLabel->setPixmap(fixedPixmap);
+    nextPageLabel->setFixedSize(W, H);
 
+    // 2️⃣ 初始 / 结束位置
+    QRect newStart, newEnd(0, 0, W, H);
+    QRect oldStart(0, 0, W, H), oldEnd;
 
     if (toRight) {
-        // 新页面从右侧进入
-        // startRect = QRect(windowSize.width(), 0, windowSize.width(), windowSize.height());
-        startRect = QRect(windowSize.width(), 0, windowSize.width(), topHeight);
-        // endRect = QRect(0, 0, windowSize.width(), windowSize.height());
-        endRect = QRect(0, 0, windowSize.width(), topHeight);
-
+        newStart = QRect(W, 0, W, H);
+        oldEnd   = QRect(-W, 0, W, H);
     } else {
-        // 新页面从左侧进入
-        startRect = QRect(-windowSize.width(), 0, windowSize.width(), windowSize.height());
-        endRect = QRect(0, 0, windowSize.width(), windowSize.height());
+        newStart = QRect(-W, 0, W, H);
+        oldEnd   = QRect(W, 0, W, H);
     }
 
-    // 显示新页面
-    nextPageLabel->setGeometry(startRect);
+    nextPageLabel->setGeometry(newStart);
     nextPageLabel->show();
     nextPageLabel->raise();
 
-    nextPageLabel->raise();
+    // 3️⃣ 摄像头 & UI 永远在最上层
     cameraView->raise();
     countdownLabel->raise();
-    shootBtn->raise();
-    prevBtn->raise();    // 确保按钮在动画页面上层
-    nextBtn->raise();    // 确保按钮在动画页面上层
+    prevBtn->raise();
+    nextBtn->raise();
 
-    // 创建滑动动画
-    QPropertyAnimation *slideAnimation = new QPropertyAnimation(nextPageLabel, "geometry", this);
-    slideAnimation->setDuration(800);
-    slideAnimation->setStartValue(startRect);
-    slideAnimation->setEndValue(endRect);
-    slideAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    // 4️⃣ 动画
+    QPropertyAnimation *inAnim = new QPropertyAnimation(nextPageLabel, "pos");
+    inAnim->setDuration(800);
+    inAnim->setStartValue(newStart.topLeft());
+    inAnim->setEndValue(newEnd.topLeft());
+    inAnim->setEasingCurve(QEasingCurve::OutCubic);
 
-    // 同时让当前页面滑出
-    QPropertyAnimation *currentSlideAnimation = new QPropertyAnimation(backgroundLabel, "geometry", this);
-    QRect currentEndRect;
+    QPropertyAnimation *outAnim = new QPropertyAnimation(backgroundLabel, "pos");
+    outAnim->setDuration(800);
+    outAnim->setStartValue(oldStart.topLeft());
+    outAnim->setEndValue(oldEnd.topLeft());
+    outAnim->setEasingCurve(QEasingCurve::OutCubic);
 
-    if (toRight) {
-        currentEndRect = QRect(-windowSize.width() / 2, 0, windowSize.width(), windowSize.height());
-    } else {
-        currentEndRect = QRect(windowSize.width() / 2, 0, windowSize.width(), windowSize.height());
-    }
+    QParallelAnimationGroup *group = new QParallelAnimationGroup(this);
+    group->addAnimation(inAnim);
+    group->addAnimation(outAnim);
 
-    currentSlideAnimation->setDuration(800);
-    // currentSlideAnimation->setStartValue(QRect(0, 0, windowSize.width(), windowSize.height()));
-    currentSlideAnimation->setStartValue(QRect(0, 0, windowSize.width(), topHeight));
-    currentSlideAnimation->setEndValue(currentEndRect);
-    currentSlideAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    connect(group, &QParallelAnimationGroup::finished, this, [=]() {
+        backgroundLabel->setPixmap(nextPageLabel->pixmap(Qt::ReturnByValue));
+        backgroundLabel->setGeometry(0, 0, W, H);
 
-    // 创建动画组
-    QParallelAnimationGroup *animationGroup = new QParallelAnimationGroup(this);
-    animationGroup->addAnimation(slideAnimation);
-    animationGroup->addAnimation(currentSlideAnimation);
-
-    // 连接动画完成信号
-    connect(animationGroup, &QParallelAnimationGroup::finished, this, [=]() {
-
-        // 动画完成后，更新当前页面
-        QPixmap nextPixmap = nextPageLabel->pixmap(Qt::ReturnByValue);
-        if (!nextPixmap.isNull()) {
-            backgroundLabel->setPixmap(nextPixmap);
-        }
-
-        // 重置当前页面位置
-        // backgroundLabel->setGeometry(0, 0, windowSize.width(), windowSize.height());
-        backgroundLabel->setGeometry(0, 0, windowSize.width(), topHeight);
-
-        // 隐藏下一页标签
         nextPageLabel->hide();
 
+        cameraView->raise();
+        countdownLabel->raise();
+        prevBtn->raise();
+        nextBtn->raise();
 
-        // 恢复按钮状态
-        prevBtn->setEnabled(true);
-        nextBtn->setEnabled(true);
+        showDateLabel();//显示日期
 
-        // 重置动画状态
         isAnimating = false;
-
-        // 清理动画对象
-        animationGroup->deleteLater();
+        group->deleteLater();
     });
 
-    // 启动动画
-    animationGroup->start();
+    group->start();
 }
 
 // 动画完成后的处理
@@ -694,7 +693,9 @@ void CameraPage::layoutContainers(int topHeight, int bottomHeight)
 {
     topContainer->setGeometry(0, 0, width(), topHeight);
     bottomContainer->setGeometry(0, topHeight, width(), bottomHeight);
-    topContent->setGeometry(0, 0, width(), topHeight * 2); // 动画准备
+    if (!isAnimating) {
+        topContent->setGeometry(0, 0, width(), topHeight * 2);
+    }
 }
 
 // 2️⃣ 背景与翻页图片
@@ -710,9 +711,9 @@ void CameraPage::updateBackgroundGeometry()
     if (windowSize.width() <= 0 || windowSize.height() <= 0) return;
 
     reloadCurrentBackground(windowSize);
-    if (nextPageLabel->isVisible()) {
-        reloadNextBackground(windowSize);
-    }
+    // if (nextPageLabel->isVisible()) {
+    //     reloadNextBackground(windowSize);
+    // }
 }
 
 // 3️⃣ 摄像头与倒计时布局
@@ -722,14 +723,22 @@ void CameraPage::layoutCameraAndCountdown(int topHeight)
     int topWidth = windowSize.width();
 
     // --- 1. 布局 cameraView (保持你之前的居中逻辑) ---
-    int cameraWidth  = DESIGN_WIDTH * uiScale;
-    int cameraHeight = DESIGN_HEIGHT * 0.25 * uiScale;//xxxx
+    // int cameraWidth = topWidth;
+    // int cameraHeight = topHeight/4;
+    // cameraHeight = qMax(100, cameraHeight);
 
-    cameraHeight = qMax(100, cameraHeight);
+    // int cameraX = 0;
+    // int cameraY = topHeight/4;
+    // cameraView->setGeometry(cameraX, cameraY, cameraWidth, cameraHeight);
+    int W = topContainer->width();
+    int H = topContainer->height();
 
-    int cameraX = 0;
-    int cameraY = topHeight/4;
-    cameraView->setGeometry(cameraX, cameraY, cameraWidth, cameraHeight);
+    cameraView->setGeometry(
+        int(W * 0.0742),
+        int(H * 0.2776),
+        int(W * 0.8524),
+        int(H * 0.3450)
+        );
 
     // --- 2. 布局 countdownLabel (新的要求) ---
     // 位置：从 topHeight 的 1/4 开始
@@ -737,8 +746,24 @@ void CameraPage::layoutCameraAndCountdown(int topHeight)
     // 高度：到 1/2 结束，所以高度也是 topHeight 的 1/4
     int countdownHeight = topHeight / 4;
 
-    // 宽度：整个 topContainer 的宽度
-    countdownLabel->setGeometry(0, countdownY, topWidth, countdownHeight);
+
+
+
+    // 获取摄像头画面的几何信息
+    QRect camRect = cameraView->geometry();
+
+    // 倒计时大小（可以跟摄像头比例相关）
+    int countdownW = camRect.width();
+    int countdownH = camRect.height();
+
+    // 设置倒计时位置：完全覆盖摄像头区域（居中显示）
+    countdownLabel->setGeometry(
+        camRect.x(),
+        camRect.y(),
+        countdownW,
+        countdownH
+        );
+
 
     // --- 3. 字体与样式 ---
     // 根据 countdownHeight 动态计算字号，确保视觉比例协调
@@ -756,6 +781,7 @@ void CameraPage::layoutCameraAndCountdown(int topHeight)
         "QLabel { color: #FF0000; background-color: transparent; }"
         );
 
+
     // 确保倒计时在最顶层，不被 cameraView 遮挡
     countdownLabel->raise();
 }
@@ -763,39 +789,65 @@ void CameraPage::layoutCameraAndCountdown(int topHeight)
 // 4️⃣ 按钮布局
 void CameraPage::layoutButtons()
 {
-    // 1. 获取当前底部容器的实际尺寸
-    int containerW = bottomContainer->width();
-    int containerH = bottomContainer->height();
+    /* ===== 1️⃣ 拍照按钮：仍然在 bottomContainer ===== */
+    int bw = bottomContainer->width();
+    int bh = bottomContainer->height();
+    printf("%d\n",&bw);
 
-    // --- 2. "立即开拍"按钮居中 ---
-    int shootBtnWidth = 250;
-    int shootBtnHeight = 80;
-    // 如果容器高度不足以放下 80px，可以考虑动态缩放高度，这里暂时居中
-    int shootBtnX = (containerW - shootBtnWidth) / 2;
-    int shootBtnY = (containerH - shootBtnHeight) / 2;
+    int shootW = 120;
+    int shootH = 30;
 
-    shootBtn->setGeometry(shootBtnX, shootBtnY, shootBtnWidth, shootBtnHeight);
+    shootBtn->setGeometry(
+        (bw - shootW) / 2,
+        (bh - shootH) / 2-15,
+        shootW,
+        shootH
+        );
 
-    // --- 3. 箭头按钮布局 (现在它们在 bottomContainer 内部) ---
-    int arrowBtnSize = calcArrowButtonSize(); // 你之前的计算逻辑
-    prevBtn->setFixedSize(arrowBtnSize, arrowBtnSize);
-    nextBtn->setFixedSize(arrowBtnSize, arrowBtnSize);
-    prevBtn->setIconSize(QSize(arrowBtnSize, arrowBtnSize));
-    nextBtn->setIconSize(QSize(arrowBtnSize, arrowBtnSize));
+    /* ===== 2️⃣ 左右箭头：回到 topContainer 两侧 ===== */
+    int arrowSize = calcArrowButtonSize();
 
-    // 垂直居中
-    int arrowBtnY = (containerH - arrowBtnSize) / 2;
+    prevBtn->setFixedSize(arrowSize, arrowSize);
+    nextBtn->setFixedSize(arrowSize, arrowSize);
+    prevBtn->setIconSize(QSize(arrowSize, arrowSize));
+    nextBtn->setIconSize(QSize(arrowSize, arrowSize));
 
-    // 水平位置：左右各留一定边距 (比如 40px)
-    int margin = 40;
-    int prevBtnX = margin;
-    int nextBtnX = containerW - arrowBtnSize - margin;
+    int topW = topContainer->width();
+    // ------------------- 修改重点开始 -------------------
 
-    // 设置几何尺寸
-    prevBtn->setGeometry(prevBtnX, arrowBtnY, arrowBtnSize, arrowBtnSize);
-    nextBtn->setGeometry(nextBtnX, arrowBtnY, arrowBtnSize, arrowBtnSize);
+    // 1. 获取摄像头控件当前的几何信息 (x, y, width, height)
+    QRect camRect = cameraView->geometry();
 
-    // 确保它们在背景图之上
+    // 2. 计算摄像头的垂直中心点 Y 坐标
+    // (摄像头顶部Y + 摄像头高度的一半)
+    int camCenterY = camRect.y() + (camRect.height()*3 / 5);
+
+    // 3. 计算按钮的 Top Y 坐标
+    // (摄像头中心点 - 按钮高度的一半)，这样按钮中心就会对齐摄像头中心
+    int btnY = camCenterY - (arrowSize / 2);
+
+    // 4. 设置左右边距 (如果觉得离屏幕边缘太近/太远，调整这个 margin 值)
+    int margin = 5;
+
+    // 左箭头位置
+    prevBtn->setGeometry(
+        margin,
+        btnY,           // 使用计算出的新 Y 坐标
+        arrowSize,
+        arrowSize
+        );
+
+    // 右箭头位置
+    nextBtn->setGeometry(
+        topW - arrowSize - margin,
+        btnY,           // 使用计算出的新 Y 坐标
+        arrowSize,
+        arrowSize
+        );
+
+    // ------------------- 修改重点结束 -------------------
+
+    /* ===== 层级 ===== */
     prevBtn->raise();
     nextBtn->raise();
     shootBtn->raise();
@@ -804,13 +856,27 @@ void CameraPage::layoutButtons()
 // 5️⃣ 底部文字
 void CameraPage::layoutBottomText()
 {
-    int textHeight = 80;
+    // 1️⃣ 几何尺寸（小而精致）
+    int textHeight = 35;
+    int spacing = 4;
+
     bottomTextLabel->setGeometry(
         0,
-        shootBtn->y() + shootBtn->height() + 15,
+        shootBtn->y() + shootBtn->height() + spacing,
         bottomContainer->width(),
         textHeight
         );
+
+    // 2️⃣ 【关键】真正缩小字体
+    QFont f;
+    f.setBold(true);     // 仍然清晰
+    bottomTextLabel->setFont(f);
+
+    // 3️⃣ 对齐方式
+    bottomTextLabel->setAlignment(Qt::AlignCenter);
+
+    // 4️⃣ 防止被裁剪（可选但推荐）
+    bottomTextLabel->setWordWrap(false);
 }
 
 // 6️⃣ 覆盖图片
@@ -831,6 +897,7 @@ void CameraPage::raiseWidgets()
     shootBtn->raise();
     prevBtn->raise();
     nextBtn->raise();
+    if (dateLabel) dateLabel->raise();
 }
 
 void CameraPage::reloadCurrentBackground(const QSize &windowSize)
@@ -901,9 +968,9 @@ int CameraPage::calcArrowButtonSize() const
     const int DESIGN_WIDTH = 1280;
 
     // 按钮尺寸区间
-    const int NORMAL_SIZE = 180;   // 1280 宽时的标准大小
-    const int MIN_SIZE    = 100;   // 最小
-    const int MAX_SIZE    = 240;   // 最大
+    const int NORMAL_SIZE = 95;   // 1280 宽时的标准大小
+    const int MIN_SIZE    = 48;  // 最小
+    const int MAX_SIZE    = 125;   // 最大
 
     // 防止 width 为 0
     if (w <= 0)
@@ -918,4 +985,25 @@ int CameraPage::calcArrowButtonSize() const
     int size = static_cast<int>(NORMAL_SIZE * scale);
 
     return qBound(MIN_SIZE, size, MAX_SIZE);
+}
+
+QString CameraPage::currentDateString() const
+{
+    QDate d = QDate::currentDate();
+    return QString("%1年%2月%3日")
+        .arg(d.year())
+        .arg(d.month())
+        .arg(d.day());
+}
+
+void CameraPage::showDateLabel()
+{
+    if (dateLabel)
+        dateLabel->show();
+}
+
+void CameraPage::hideDateLabel()
+{
+    if (dateLabel)
+        dateLabel->hide();
 }

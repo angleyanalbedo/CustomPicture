@@ -37,57 +37,52 @@ void PageFlipEffect::setDirection(bool toRight)
 
 void PageFlipEffect::draw(QPainter *painter)
 {
-    // 如果没有翻页效果，直接绘制原图
-    if (m_angle == 0 || !m_flipping) {
-        drawSource(painter);
-        return;
-    }
-
     QPoint offset;
-    // 使用正确的坐标系统
-    QPixmap pixmap = sourcePixmap(Qt::DeviceCoordinates, &offset);
+    QPixmap pix = sourcePixmap(Qt::DeviceCoordinates, &offset);
 
-    if (pixmap.isNull()) {
+    if (pix.isNull() || !m_flipping) {
         drawSource(painter);
         return;
     }
 
     painter->save();
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-    // 简化：使用简单的2D滑动效果，避免3D计算的复杂性
-    QTransform transform;
-    int width = pixmap.width();
-    int height = pixmap.height();
+    int w = pix.width();
+    int h = pix.height();
 
-    // 计算滑动距离（根据角度）
-    qreal slideDistance = width * (m_angle / 90.0);
+    // 角度 0 ~ 90
+    qreal rad = qDegreesToRadians(m_angle);
+    qreal scaleX = qCos(rad);               // 关键：宽度压缩
+    scaleX = qMax(scaleX, 0.02);             // 防止变成 0
+
+    int visibleW = int(w * scaleX);
+
+    QTransform t;
 
     if (m_direction) {
-        // 向右翻页：从右侧滑入
-        // 设置新页面从右侧进入
-        transform.translate(width - slideDistance, 0);
-        painter->setTransform(transform);
-        painter->drawPixmap(offset, pixmap);
-
-        // 绘制当前页面向左滑出
-        painter->setTransform(QTransform()); // 重置变换
-        QTransform currentTransform;
-        currentTransform.translate(-slideDistance, 0);
-        painter->setTransform(currentTransform);
-        // 这里需要绘制当前页面，但需要从其他地方获取
+        // 👉 从右往左翻（右边固定）
+        t.translate(w, 0);
+        t.scale(-scaleX, 1.0);
     } else {
-        // 向左翻页：从左侧滑入
-        // 设置新页面从左侧进入
-        transform.translate(-width + slideDistance, 0);
-        painter->setTransform(transform);
-        painter->drawPixmap(offset, pixmap);
-
-        // 绘制当前页面向右滑出
-        painter->setTransform(QTransform()); // 重置变换
-        QTransform currentTransform;
-        currentTransform.translate(slideDistance, 0);
-        painter->setTransform(currentTransform);
+        // 👉 从左往右翻（左边固定）
+        t.scale(scaleX, 1.0);
     }
+
+    painter->setTransform(t, true);
+
+    // 裁剪只画“还能看到的部分”
+    painter->setClipRect(0, 0, visibleW, h);
+    painter->drawPixmap(offset, pix);
+
+    // ===== 简单阴影（非常重要）=====
+    QLinearGradient shadowGrad(
+        m_direction ? w - visibleW : 0, 0,
+        m_direction ? w : visibleW, 0
+        );
+    shadowGrad.setColorAt(0.0, QColor(0, 0, 0, 80));
+    shadowGrad.setColorAt(1.0, QColor(0, 0, 0, 0));
+    painter->fillRect(0, 0, w, h, shadowGrad);
 
     painter->restore();
 }

@@ -28,7 +28,6 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
-
     // 设计分辨率
     static constexpr int DESIGN_WIDTH  = 1080;
     static constexpr int DESIGN_HEIGHT = 1920;
@@ -49,6 +48,7 @@ private:
     QLabel *bottomBackgroundLabel;
     QLabel *bottomTextLabel;
     QLabel *overlayImageLabel;
+    QLabel* dateLabel;//显示当前日期
 
     QLabel *cameraView;
     QLabel *countdownLabel;
@@ -95,6 +95,14 @@ private:
     void initCameraAndCountdown();
     void initAnimations();
     void initSignals();
+
+    // ==============================
+    // 日期
+    // ==============================
+
+    void showDateLabel();
+    void hideDateLabel();
+    QString currentDateString() const;
 
     // ==============================
     // 布局管理
